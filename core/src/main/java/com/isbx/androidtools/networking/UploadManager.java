@@ -330,7 +330,9 @@ public class UploadManager {
 //                            cancel(true);
 //                        }
 //                    });
-
+                    File file = new File(uri.getPath());
+                    MultipartBody.Part filePart = MultipartBody.Part
+                            .createFormData("file", file.getName(), RequestBody.create(MediaType.parse("*/*"), file));
                     HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
                     interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
                     OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -351,7 +353,7 @@ public class UploadManager {
                         credentials.getSignature(),
                         DEFAULT_SUCCESS_STATUS,
                         acl,
-                        in,
+                        filePart,
                         credentials.getContentType()
                     );
                     request.enqueue(new Callback<ResponseBody>() {
