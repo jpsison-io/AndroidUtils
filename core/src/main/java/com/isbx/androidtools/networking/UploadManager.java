@@ -10,6 +10,7 @@ import android.webkit.MimeTypeMap;
 
 import com.isbx.androidtools.networking.s3.S3Credentials;
 import com.isbx.androidtools.networking.s3.S3CredentialsProvider;
+import com.isbx.androidtools.networking.s3.S3Service;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.SyncHttpClient;
@@ -19,8 +20,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.util.concurrent.TimeUnit;
 
 import cz.msebera.android.httpclient.Header;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.internal.EverythingIsNonNull;
 
 /**
  * This class provides a simple interface for uploading an arbitrary number of files to Amazon S3.
@@ -217,6 +230,24 @@ public class UploadManager {
             this.listener = listener;
         }
 
+        public void request(Uri... uris) {
+//            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+//            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+//            OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+//            Uri uri = uris[0];
+//            File file = new File(uri.getPath());
+//            RequestBody requestBody1 = RequestBody.create(MediaType.parse("*/*"), file);
+//            MultipartBody.Part fileToUpload1 = MultipartBody.Part
+//                    .createFormData("file", file.getName(), requestBody1);
+//
+//            S3Credentials credentials = credentialsProvider.getCredentials();
+//            if (credentials == null) {
+//                publishFailure(new IOException("Failed retrieving S3 credentials from provider"), 0);
+//            }
+//
+
+        }
+
         @Override
         protected String[] doInBackground(Uri... uris) {
             S3Credentials credentials = credentialsProvider.getCredentials();
@@ -266,35 +297,77 @@ public class UploadManager {
                 }
 
                 if (in != null) {
-                    SyncHttpClient client = new SyncHttpClient();
-                    client.setTimeout(UPLOAD_TIMEOUT_MS);
-                    client.setConnectTimeout(5 * 6000);
-                    client.setResponseTimeout(5 * 6000);
-                    RequestParams params = new RequestParams();
+//                    SyncHttpClient client = new SyncHttpClient();
+//                    client.setTimeout(UPLOAD_TIMEOUT_MS);
+//                    client.setConnectTimeout(5 * 6000);
+//                    client.setResponseTimeout(5 * 6000);
+//                    RequestParams params = new RequestParams();
                     final String key = credentials.getUniqueFilePrefix()+suffixRule.getSuffix(uri, i)+"."+extension;
-                    params.setForceMultipartEntityContentType(true);
-                    params.put("key", key);
-                    params.put("AWSAccessKeyId", credentials.getAWSAccessKeyId());
-                    params.put("policy", credentials.getPolicy());
-                    params.put("signature", credentials.getSignature());
-                    params.put("success_action_status", DEFAULT_SUCCESS_STATUS);
-                    params.put("acl", acl);
-                    params.put("file", in);
-                    params.put("Content-Type", credentials.getContentType());
-
+//                    params.setForceMultipartEntityContentType(true);
+//                    params.put("key", key);
+//                    params.put("AWSAccessKeyId", credentials.getAWSAccessKeyId());
+//                    params.put("policy", credentials.getPolicy());
+//                    params.put("signature", credentials.getSignature());
+//                    params.put("success_action_status", DEFAULT_SUCCESS_STATUS);
+//                    params.put("acl", acl);
+//                    params.put("file", in);
+//                    params.put("Content-Type", credentials.getContentType());
+//
                     final int index = i;
                     final String url = String.format(S3_URL_FORMAT, credentials.getBucket());
-                    client.post(url, params, new AsyncHttpResponseHandler() {
+//
+//                    client.post(url, params, new AsyncHttpResponseHandler() {
+//                        @Override
+//                        public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+//                            result[index] = url + "/" + key;
+//                            publishProgress((int) (index /(float) result.length * 100));
+//                        }
+//
+//                        @Override
+//                        public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+//                            error.printStackTrace();
+//                            publishFailure(error, index);
+//                            cancel(true);
+//                        }
+//                    });
+
+                    HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+                    interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+                    OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                            .connectTimeout(1, TimeUnit.MINUTES)
+                            .writeTimeout(5, TimeUnit.MINUTES)
+                            .readTimeout(3, TimeUnit.MINUTES)
+                            .addInterceptor(interceptor)
+                            .build();
+                    S3Service service = new Retrofit.Builder()
+                            .baseUrl(url)
+                            .client(okHttpClient)
+                            .build()
+                            .create(S3Service.class);
+                    Call<ResponseBody> request = service.uploadFile(
+                        key,
+                        credentials.getAWSAccessKeyId(),
+                        credentials.getPolicy(),
+                        credentials.getSignature(),
+                        DEFAULT_SUCCESS_STATUS,
+                        acl,
+                        in,
+                        credentials.getContentType()
+                    );
+                    request.enqueue(new Callback<ResponseBody>() {
+
                         @Override
-                        public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                        @EverythingIsNonNull
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                             result[index] = url + "/" + key;
                             publishProgress((int) (index /(float) result.length * 100));
                         }
 
                         @Override
-                        public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                            error.printStackTrace();
-                            publishFailure(error, index);
+                        @EverythingIsNonNull
+                        public void onFailure(Call<ResponseBody> call, Throwable t) {
+                            t.printStackTrace();
+                            publishFailure(t, index);
                             cancel(true);
                         }
                     });
