@@ -333,7 +333,7 @@ public class UploadManager {
 //                    });
                     File file = new File(uri.getPath());
                     MultipartBody.Part filePart = MultipartBody.Part
-                            .createFormData("file", file.getName(), RequestBody.create(MediaType.parse("*/*"), file));
+                            .createFormData("file", file.getName(), RequestBody.create(MediaType.parse("image/*"), file));
                     HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
                     interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
                     OkHttpClient okHttpClient = new OkHttpClient.Builder()
