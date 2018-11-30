@@ -347,14 +347,14 @@ public class UploadManager {
                             .build()
                             .create(S3Service.class);
                     Call<ResponseBody> request = service.uploadFile(
-                        key,
-                        credentials.getAWSAccessKeyId(),
-                        credentials.getPolicy(),
-                        credentials.getSignature(),
-                        DEFAULT_SUCCESS_STATUS,
-                        acl,
+                        RequestBody.create(MediaType.parse("multipart/form-data"), key),
+                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getAWSAccessKeyId()),
+                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getPolicy()),
+                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getSignature()),
+                        RequestBody.create(MediaType.parse("multipart/form-data"), DEFAULT_SUCCESS_STATUS + ""),
+                        RequestBody.create(MediaType.parse("multipart/form-data"), acl),
                         filePart,
-                        credentials.getContentType()
+                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getContentType())
                     );
                     request.enqueue(new Callback<ResponseBody>() {
 

@@ -3,6 +3,7 @@ package com.isbx.androidtools.networking.s3;
 import java.io.InputStream;
 
 import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Field;
@@ -16,13 +17,13 @@ public interface S3Service {
     @POST("/")
     @Multipart
     Call<ResponseBody> uploadFile(
-        @Part("key") String key,
-        @Part("AWSAccessKeyId") String accessKeyId,
-        @Part("policy") String policy,
-        @Part("signature") String signature,
-        @Part("success_action_status") Integer successStatus,
-        @Part("acl") String acl,
+        @Part("key") RequestBody key,
+        @Part("AWSAccessKeyId") RequestBody accessKeyId,
+        @Part("policy") RequestBody policy,
+        @Part("signature") RequestBody signature,
+        @Part("success_action_status") RequestBody successStatus,
+        @Part("acl") RequestBody acl,
         @Part MultipartBody.Part filePart,
-        @Part("Content-Type") String contentType
+        @Part("Content-Type") RequestBody contentType
     );
 }
