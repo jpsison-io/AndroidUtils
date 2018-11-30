@@ -268,6 +268,8 @@ public class UploadManager {
                 if (in != null) {
                     SyncHttpClient client = new SyncHttpClient();
                     client.setTimeout(UPLOAD_TIMEOUT_MS);
+                    client.setConnectTimeout(5 * 6000);
+                    client.setResponseTimeout(5 * 6000);
                     RequestParams params = new RequestParams();
                     final String key = credentials.getUniqueFilePrefix()+suffixRule.getSuffix(uri, i)+"."+extension;
                     params.setForceMultipartEntityContentType(true);
