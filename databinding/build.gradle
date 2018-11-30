@@ -25,5 +25,5 @@ android {
 }
 
 dependencies {
-    implementation 'com.github.jpsison-io:AndroidUtils:8dac429f83'
+    implementation 'com.github.jpsison-io:AndroidUtils:2acadc293c'
 }

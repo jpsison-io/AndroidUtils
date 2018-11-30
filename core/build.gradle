@@ -27,5 +27,6 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
     implementation 'com.loopj.android:android-async-http:1.4.9'
     implementation 'com.squareup.retrofit2:retrofit:2.5.0'
+    implementation "com.squareup.retrofit2:converter-gson:2.5.0"
     implementation 'com.github.dotloop:aosp-exif:be25ae51ec'
 }
