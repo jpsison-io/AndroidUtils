@@ -48,7 +48,7 @@ public class UploadManager {
     private static final String S3_URL_FORMAT = "https://%s.s3.amazonaws.com";
     private static final String DEFAULT_ACL = "public-read";
     private static final int DEFAULT_SUCCESS_STATUS = 201;
-    private static final int UPLOAD_TIMEOUT_MS = 30000;
+    private static final int UPLOAD_TIMEOUT_MS = 60000;
 
     /**
      * A convenience implementation of {@link SuffixRule} that will return a numerical suffix based
