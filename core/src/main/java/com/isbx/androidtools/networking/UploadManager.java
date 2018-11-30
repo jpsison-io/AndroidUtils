@@ -33,6 +33,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.internal.EverythingIsNonNull;
 
 /**
@@ -343,6 +344,7 @@ public class UploadManager {
                             .build();
                     S3Service service = new Retrofit.Builder()
                             .baseUrl(url)
+                            .addConverterFactory(GsonConverterFactory.create())
                             .client(okHttpClient)
                             .build()
                             .create(S3Service.class);
