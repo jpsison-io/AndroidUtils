@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-group='com.github.acrimi'
+group='com.github.jpsison-io'
 
 android {
     compileSdkVersion 28
