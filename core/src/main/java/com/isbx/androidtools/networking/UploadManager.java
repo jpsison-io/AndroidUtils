@@ -11,30 +11,21 @@ import android.webkit.MimeTypeMap;
 import com.isbx.androidtools.networking.s3.S3Credentials;
 import com.isbx.androidtools.networking.s3.S3CredentialsProvider;
 import com.isbx.androidtools.networking.s3.S3Service;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.SyncHttpClient;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
-
-import cz.msebera.android.httpclient.Header;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.internal.EverythingIsNonNull;
 
 /**
  * This class provides a simple interface for uploading an arbitrary number of files to Amazon S3.
@@ -231,24 +222,6 @@ public class UploadManager {
             this.listener = listener;
         }
 
-        public void request(Uri... uris) {
-//            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-//            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-//            OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
-//            Uri uri = uris[0];
-//            File file = new File(uri.getPath());
-//            RequestBody requestBody1 = RequestBody.create(MediaType.parse("*/*"), file);
-//            MultipartBody.Part fileToUpload1 = MultipartBody.Part
-//                    .createFormData("file", file.getName(), requestBody1);
-//
-//            S3Credentials credentials = credentialsProvider.getCredentials();
-//            if (credentials == null) {
-//                publishFailure(new IOException("Failed retrieving S3 credentials from provider"), 0);
-//            }
-//
-
-        }
-
         @Override
         protected String[] doInBackground(Uri... uris) {
             S3Credentials credentials = credentialsProvider.getCredentials();
@@ -298,49 +271,16 @@ public class UploadManager {
                 }
 
                 if (in != null) {
-//                    SyncHttpClient client = new SyncHttpClient();
-//                    client.setTimeout(UPLOAD_TIMEOUT_MS);
-//                    client.setConnectTimeout(5 * 6000);
-//                    client.setResponseTimeout(5 * 6000);
-//                    RequestParams params = new RequestParams();
                     final String key = credentials.getUniqueFilePrefix()+suffixRule.getSuffix(uri, i)+"."+extension;
-//                    params.setForceMultipartEntityContentType(true);
-//                    params.put("key", key);
-//                    params.put("AWSAccessKeyId", credentials.getAWSAccessKeyId());
-//                    params.put("policy", credentials.getPolicy());
-//                    params.put("signature", credentials.getSignature());
-//                    params.put("success_action_status", DEFAULT_SUCCESS_STATUS);
-//                    params.put("acl", acl);
-//                    params.put("file", in);
-//                    params.put("Content-Type", credentials.getContentType());
-//
                     final int index = i;
                     final String url = String.format(S3_URL_FORMAT, credentials.getBucket());
-//
-//                    client.post(url, params, new AsyncHttpResponseHandler() {
-//                        @Override
-//                        public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-//                            result[index] = url + "/" + key;
-//                            publishProgress((int) (index /(float) result.length * 100));
-//                        }
-//
-//                        @Override
-//                        public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-//                            error.printStackTrace();
-//                            publishFailure(error, index);
-//                            cancel(true);
-//                        }
-//                    });
                     File file = new File(uri.getPath());
                     MultipartBody.Part filePart = MultipartBody.Part
-                            .createFormData("file", file.getName(), RequestBody.create(MediaType.parse("image/*"), file));
-                    HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-                    interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+                            .createFormData("file", file.getName(), RequestBody.create(MediaType.parse(credentials.getContentType()), file));
                     OkHttpClient okHttpClient = new OkHttpClient.Builder()
                             .connectTimeout(1, TimeUnit.MINUTES)
                             .writeTimeout(5, TimeUnit.MINUTES)
                             .readTimeout(3, TimeUnit.MINUTES)
-                            .addInterceptor(interceptor)
                             .build();
                     S3Service service = new Retrofit.Builder()
                             .baseUrl(url)
@@ -349,32 +289,29 @@ public class UploadManager {
                             .build()
                             .create(S3Service.class);
                     Call<ResponseBody> request = service.uploadFile(
-                        RequestBody.create(MediaType.parse("multipart/form-data"), key),
-                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getAWSAccessKeyId()),
-                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getPolicy()),
-                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getSignature()),
-                        RequestBody.create(MediaType.parse("multipart/form-data"), DEFAULT_SUCCESS_STATUS + ""),
-                        RequestBody.create(MediaType.parse("multipart/form-data"), acl),
-                        filePart,
-                        RequestBody.create(MediaType.parse("multipart/form-data"), credentials.getContentType())
+                        RequestBody.create(MultipartBody.FORM, key),
+                        RequestBody.create(MultipartBody.FORM, credentials.getAWSAccessKeyId()),
+                        RequestBody.create(MultipartBody.FORM, credentials.getPolicy()),
+                        RequestBody.create(MultipartBody.FORM, credentials.getSignature()),
+                        RequestBody.create(MultipartBody.FORM, DEFAULT_SUCCESS_STATUS + ""),
+                        RequestBody.create(MultipartBody.FORM, acl),
+                        RequestBody.create(MultipartBody.FORM, credentials.getContentType()),
+                        filePart
                     );
-                    request.enqueue(new Callback<ResponseBody>() {
-
-                        @Override
-                        @EverythingIsNonNull
-                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    try {
+                        Response<ResponseBody> response = request.execute();
+                        if (response.isSuccessful()) {
                             result[index] = url + "/" + key;
                             publishProgress((int) (index /(float) result.length * 100));
-                        }
-
-                        @Override
-                        @EverythingIsNonNull
-                        public void onFailure(Call<ResponseBody> call, Throwable t) {
-                            t.printStackTrace();
-                            publishFailure(t, index);
+                        } else {
+                            publishFailure(new Exception(), index);
                             cancel(true);
                         }
-                    });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        publishFailure(e, index);
+                        cancel(true);
+                    }
                 }
             }
 
